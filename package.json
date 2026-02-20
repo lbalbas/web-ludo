@@ -1,0 +1,10 @@
+{
+  "name": "web-ludo",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"pnpm run --filter web dev\" \"pnpm run --filter server dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
