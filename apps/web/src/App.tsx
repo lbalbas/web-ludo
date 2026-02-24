@@ -1,6 +1,14 @@
 
 
+import { useState } from 'react';
+import { GamePage } from './pages/GamePage';
+
 function App() {
+  const [view, setView] = useState<'landing' | 'game'>('landing');
+  if (view === 'game') {
+    return <GamePage onLeave={() => setView('landing')} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
       
@@ -40,6 +48,7 @@ function App() {
           </button>
           
           <button 
+            onClick={() => setView('game')}
             className="px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/30 transform hover:-translate-y-1 transition-all flex-1 max-w-[250px] text-lg border border-blue-400/30"
           >
             Local Match
