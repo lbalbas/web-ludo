@@ -2,7 +2,10 @@
   "name": "web-ludo",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"pnpm run --filter web dev\" \"pnpm run --filter server dev\""
+    "dev": "concurrently \"pnpm run --filter web dev\" \"pnpm run --filter server dev\"",
+    "test": "pnpm -r test",
+    "test:frontend": "pnpm run --filter web test",
+    "test:backend": "pnpm run --filter server test"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
