@@ -1,6 +1,9 @@
+import React from 'react';
 import { Cell } from './Cell';
 import type { CellType, PlayerColor } from './Cell';
 import { Piece } from './Piece';
+import { useGame } from '../../context/GameContext';
+import { getPieceCoordinate } from '../../utils/boardCoordinates';
 
 // Helper to determine cell type mathematically strictly based on standard 15x15 Ludo board mapping
 function getCellProperties(x: number, y: number): { type: CellType; color: PlayerColor } {
@@ -33,24 +36,34 @@ function getCellProperties(x: number, y: number): { type: CellType; color: Playe
 }
 
 export function Board() {
+  const { state } = useGame();
   const cells = [];
+
+  // Map pieces by their (x, y) coordinates for quick lookup during rendering
+  const pieceLayout: Record<string, React.ReactNode[]> = {};
+  Object.values(state.pieces).forEach(piece => {
+    const { x, y } = getPieceCoordinate(piece.color, piece.status, piece.position);
+    const key = `${x},${y}`;
+    if (!pieceLayout[key]) pieceLayout[key] = [];
+    pieceLayout[key].push(<Piece key={piece.id} color={piece.color} id={piece.id} />);
+  });
   
   // Generate 15x15 board (0-indexed)
   for (let y = 0; y < 15; y++) {
     for (let x = 0; x < 15; x++) {
       const { type, color } = getCellProperties(x, y);
       
-      // Temporarily mock pieces for visual styling check
-      let pieceContent = null;
-      if (x === 2 && y === 2) pieceContent = <Piece color="red" id="r1" />;
-      if (x === 3 && y === 3) pieceContent = <Piece color="red" id="r2" />;
-      if (x === 11 && y === 2) pieceContent = <Piece color="green" id="g1" />;
-      if (x === 12 && y === 12) pieceContent = <Piece color="yellow" id="y1" />;
-      if (x === 2 && y === 12) pieceContent = <Piece color="blue" id="b1" />;
-
-      // For standard path, mock some pieces
-      if (x === 7 && y === 2) pieceContent = <Piece color="green" id="g2" />;
-      if (x === 1 && y === 6) pieceContent = <Piece color="red" id="r3" />; // At start safe zone
+      const key = `${x},${y}`;
+      const piecesAtCell = pieceLayout[key] || [];
+      const pieceContent = piecesAtCell.length > 0 ? (
+         <div className="relative w-full h-full flex items-center justify-center">
+            {piecesAtCell.map((p, i) => (
+              <div key={i} className="absolute inset-0" style={{ transform: `translate(${i*4}px, ${-i*4}px)`, zIndex: i }}>
+                {p}
+              </div>
+            ))}
+         </div>
+      ) : null;
 
       cells.push(
         <Cell key={`${x}-${y}`} x={x} y={y} type={type} color={color}>

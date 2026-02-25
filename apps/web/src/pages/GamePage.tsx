@@ -1,4 +1,6 @@
 import { Board } from '../components/game/Board';
+import { GameProvider } from '../context/GameContext';
+import { Dice } from '../components/game/Dice';
 
 interface GamePageProps {
   onLeave: () => void;
@@ -6,6 +8,7 @@ interface GamePageProps {
 
 export function GamePage({ onLeave }: GamePageProps) {
   return (
+    <GameProvider>
     <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 lg:p-8 relative overflow-hidden bg-slate-900">
       
       {/* Background Decorators */}
@@ -37,9 +40,7 @@ export function GamePage({ onLeave }: GamePageProps) {
           </div>
 
           <div className="mt-auto pt-6">
-            <button className="w-full py-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-lg shadow-lg transition-all active:scale-95">
-              Roll Dice (🎲 6)
-            </button>
+            <Dice />
           </div>
         </div>
 
@@ -50,5 +51,6 @@ export function GamePage({ onLeave }: GamePageProps) {
 
       </div>
     </div>
+    </GameProvider>
   );
 }
