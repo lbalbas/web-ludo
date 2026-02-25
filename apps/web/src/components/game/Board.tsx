@@ -36,7 +36,7 @@ function getCellProperties(x: number, y: number): { type: CellType; color: Playe
 }
 
 export function Board() {
-  const { state } = useGame();
+  const { state, movePiece } = useGame();
   const cells = [];
 
   // Map pieces by their (x, y) coordinates for quick lookup during rendering
@@ -45,7 +45,14 @@ export function Board() {
     const { x, y } = getPieceCoordinate(piece.color, piece.status, piece.position);
     const key = `${x},${y}`;
     if (!pieceLayout[key]) pieceLayout[key] = [];
-    pieceLayout[key].push(<Piece key={piece.id} color={piece.color} id={piece.id} />);
+    pieceLayout[key].push(
+      <Piece 
+        key={piece.id} 
+        color={piece.color} 
+        id={piece.id} 
+        onClick={() => movePiece(piece.id)} 
+      />
+    );
   });
   
   // Generate 15x15 board (0-indexed)
