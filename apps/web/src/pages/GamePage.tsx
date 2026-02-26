@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Board } from '../components/game/Board';
 import { GameProvider, useGame } from '../context/GameContext';
 import { Dice } from '../components/game/Dice';
@@ -19,9 +20,37 @@ function GameLayout({ onLeave }: GamePageProps) {
 
   const activeColor = colorConfig[state.currentTurn];
 
+  const [winner, setWinner] = useState<string | null>(null);
+  const prevTurnRef = useRef(state.currentTurn);
+
+  // When status flips to 'finished', the state has already reset (currentTurn is back to 'red').
+  // So we capture the winner name from the *previous* turn via a ref.
+  useEffect(() => {
+    if (state.status === 'finished' && winner === null) {
+      setWinner(colorConfig[prevTurnRef.current].name);
+      const timer = setTimeout(() => setWinner(null), 3500);
+      return () => clearTimeout(timer);
+    }
+    // Track previous turn whenever it changes
+    if (state.status === 'playing') {
+      prevTurnRef.current = state.currentTurn;
+    }
+  }, [state.status, state.currentTurn]);
+
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 lg:p-8 relative overflow-hidden bg-slate-900">
       
+      {/* Winner Overlay */}
+      {winner && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="text-center p-10 rounded-3xl bg-slate-800/90 border border-white/20 shadow-2xl animate-bounce">
+            <div className="text-6xl mb-4">🏆</div>
+            <h2 className="text-4xl font-black text-white mb-2">{winner}</h2>
+            <p className="text-slate-400 text-lg">wins the game!</p>
+          </div>
+        </div>
+      )}
+
       {/* Background Decorators */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
