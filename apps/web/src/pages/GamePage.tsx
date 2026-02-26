@@ -1,14 +1,25 @@
 import { Board } from '../components/game/Board';
-import { GameProvider } from '../context/GameContext';
+import { GameProvider, useGame } from '../context/GameContext';
 import { Dice } from '../components/game/Dice';
 
 interface GamePageProps {
   onLeave: () => void;
 }
 
-export function GamePage({ onLeave }: GamePageProps) {
+// Inner component to access context
+function GameLayout({ onLeave }: GamePageProps) {
+  const { state } = useGame();
+
+  const colorConfig = {
+    red: { name: 'Player 1 (Red)', bg: 'bg-red-500/20', border: 'border-red-500/40', text: 'text-red-400', dot: 'bg-red-500', shadow: 'shadow-[0_0_10px_rgba(239,68,68,0.8)]' },
+    green: { name: 'Player 2 (Green)', bg: 'bg-green-500/20', border: 'border-green-500/40', text: 'text-green-400', dot: 'bg-green-500', shadow: 'shadow-[0_0_10px_rgba(34,197,94,0.8)]' },
+    yellow: { name: 'Player 3 (Yellow)', bg: 'bg-yellow-500/20', border: 'border-yellow-500/40', text: 'text-yellow-400', dot: 'bg-yellow-500', shadow: 'shadow-[0_0_10px_rgba(234,179,8,0.8)]' },
+    blue: { name: 'Player 4 (Blue)', bg: 'bg-blue-500/20', border: 'border-blue-500/40', text: 'text-blue-400', dot: 'bg-blue-500', shadow: 'shadow-[0_0_10px_rgba(59,130,246,0.8)]' }
+  };
+
+  const activeColor = colorConfig[state.currentTurn];
+
   return (
-    <GameProvider>
     <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 lg:p-8 relative overflow-hidden bg-slate-900">
       
       {/* Background Decorators */}
@@ -33,9 +44,9 @@ export function GamePage({ onLeave }: GamePageProps) {
 
           <div className="flex flex-col gap-3">
             <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-widest">Current Turn</h3>
-            <div className="p-4 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-between">
-              <span className="font-bold text-red-400">Player 1 (Red)</span>
-              <div className="w-4 h-4 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"></div>
+            <div className={`p-4 rounded-xl ${activeColor.bg} border ${activeColor.border} flex items-center justify-between transition-colors duration-500`}>
+              <span className={`font-bold ${activeColor.text}`}>{activeColor.name}</span>
+              <div className={`w-4 h-4 rounded-full ${activeColor.dot} ${activeColor.shadow} animate-pulse transition-colors duration-500`}></div>
             </div>
           </div>
 
@@ -51,6 +62,13 @@ export function GamePage({ onLeave }: GamePageProps) {
 
       </div>
     </div>
+  );
+}
+
+export function GamePage({ onLeave }: GamePageProps) {
+  return (
+    <GameProvider>
+      <GameLayout onLeave={onLeave} />
     </GameProvider>
   );
 }
