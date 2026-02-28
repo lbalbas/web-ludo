@@ -27,6 +27,7 @@ interface GameContextType {
   state: GameState;
   rollDice: () => void;
   movePiece: (pieceId: string) => void;
+  _testSetState?: (newState: Partial<GameState>) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -230,8 +231,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const _testSetState = (newState: Partial<GameState>) => {
+    setState(prev => ({ ...prev, ...newState }));
+  };
+
   return (
-    <GameContext.Provider value={{ state, rollDice, movePiece }}>
+    <GameContext.Provider value={{ state, rollDice, movePiece, _testSetState }}>
       {children}
     </GameContext.Provider>
   );
