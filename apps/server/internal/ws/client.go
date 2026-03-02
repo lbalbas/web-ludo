@@ -47,31 +47,25 @@ func (c *Client) WritePump() {
 		c.Conn.Close()
 	}()
 
-	for {
-		select {
-		case message, ok := <-c.Send:
-			if !ok {
-				// The hub closed the channel.
-				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
+	for message := range c.Send {
+		w, err := c.Conn.NextWriter(websocket.TextMessage)
+		if err != nil {
+			return
+		}
+		w.Write(message)
 
-			w, err := c.Conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			w.Write(message)
+		// Add queued chat messages to the current websocket message.
+		n := len(c.Send)
+		for i := 0; i < n; i++ {
+			w.Write([]byte{'\n'})
+			w.Write(<-c.Send)
+		}
 
-			// Add queued chat messages to the current websocket message.
-			n := len(c.Send)
-			for i := 0; i < n; i++ {
-				w.Write([]byte{'\n'})
-				w.Write(<-c.Send)
-			}
-
-			if err := w.Close(); err != nil {
-				return
-			}
+		if err := w.Close(); err != nil {
+			return
 		}
 	}
+
+	// The hub closed the channel.
+	c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 }
