@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"web-ludo-server/internal/ws"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -15,6 +17,9 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	hub := ws.NewHub()
+	go hub.Run()
+
 	r.Get("/api", func(w http.ResponseWriter, r *http.Request) {
 		response := map[string]string{
 			"status": "ok",
@@ -23,6 +28,10 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
+	})
+
+	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
+		ws.ServeWs(hub, w, r)
 	})
 
 	log.Println("Server starting on port 8080...")
