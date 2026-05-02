@@ -1,14 +1,15 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { GameState } from '../types/game';
+import type { GameState, PlayerColor } from '../types/game';
 import { createInitialGameState } from '../types/game';
-import type { PlayerColor } from '../types/game';
 import { useGameSocket } from '../hooks/useGameSocket';
 
 
 interface GameContextType {
   state: GameState;
   status: 'connecting' | 'connected' | 'disconnected' | 'error';
+  myColor: PlayerColor | null;
+  isMyTurn: boolean;
   rollDice: () => void;
   movePiece: (pieceId: string) => void;
   _testSetState?: (newState: Partial<GameState>) => void;
@@ -18,7 +19,7 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GameState>(createInitialGameState());
-  const { status, gameState: socketGameState, sendEvent } = useGameSocket('ws://localhost:8080/ws');
+  const { status, gameState: socketGameState, myColor, sendEvent } = useGameSocket('ws://localhost:8080/ws');
 
   useEffect(() => {
     if (socketGameState) {
@@ -26,11 +27,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }, [socketGameState]);
 
+  const isMyTurn = myColor !== null && state.currentTurn === myColor;
+
   const rollDice = () => {
+    if (!isMyTurn) return;
     sendEvent('ROLL_DICE');
   };
 
   const movePiece = (pieceId: string) => {
+    if (!isMyTurn) return;
     sendEvent('MOVE_PIECE', { pieceId });
   };
 
@@ -39,7 +44,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <GameContext.Provider value={{ state, status, rollDice, movePiece, _testSetState }}>
+    <GameContext.Provider value={{ state, status, myColor, isMyTurn, rollDice, movePiece, _testSetState }}>
       {children}
     </GameContext.Provider>
   );

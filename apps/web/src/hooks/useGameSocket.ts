@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { GameState } from "../types/game";
+import type { GameState, PlayerColor } from "../types/game";
 
 type SocketStatus = "connecting" | "connected" | "disconnected" | "error";
 
@@ -11,6 +11,7 @@ interface GameEvent {
 export function useGameSocket(url: string) {
   const [status, setStatus] = useState<SocketStatus>("connecting");
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [myColor, setMyColor] = useState<PlayerColor | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
   const connect = useCallback(() => {
@@ -26,8 +27,20 @@ export function useGameSocket(url: string) {
     ws.onmessage = (event) => {
       try {
         const data: GameEvent = JSON.parse(event.data);
+
         if (data.type === "SYNC_STATE") {
           setGameState(data.payload as GameState);
+        }
+
+        if (data.type === "PLAYER_ASSIGNED") {
+          const color = (data.payload as { color: PlayerColor }).color;
+          console.log("Assigned color:", color);
+          setMyColor(color);
+        }
+
+        if (data.type === "ERROR") {
+          console.error("Server error:", data.payload);
+          setStatus("error");
         }
       } catch (err) {
         console.error("Error parsing WebSocket message:", err);
@@ -37,9 +50,11 @@ export function useGameSocket(url: string) {
     ws.onclose = () => {
       console.log("WebSocket Disconnected");
       setStatus("disconnected");
+      setMyColor(null);
       // Simple reconnection logic
       setTimeout(() => {
         if (socketRef.current?.readyState === WebSocket.CLOSED) {
+          setStatus("connecting");
           connect();
         }
       }, 3000);
@@ -70,6 +85,7 @@ export function useGameSocket(url: string) {
   return {
     status,
     gameState,
+    myColor,
     sendEvent,
   };
 }

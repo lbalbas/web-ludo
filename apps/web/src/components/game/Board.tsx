@@ -36,7 +36,7 @@ function getCellProperties(x: number, y: number): { type: CellType; color: Playe
 }
 
 export function Board() {
-  const { state, movePiece } = useGame();
+  const { state, movePiece, isMyTurn, myColor } = useGame();
   const cells = [];
 
   // Map pieces by their (x, y) coordinates for quick lookup during rendering
@@ -45,12 +45,16 @@ export function Board() {
     const { x, y } = getPieceCoordinate(piece.color, piece.status, piece.position);
     const key = `${x},${y}`;
     if (!pieceLayout[key]) pieceLayout[key] = [];
+
+    // Only allow clicking your own pieces on your turn
+    const canInteract = isMyTurn && piece.color === myColor;
+
     pieceLayout[key].push(
       <Piece 
         key={piece.id} 
         color={piece.color} 
         id={piece.id} 
-        onClick={() => movePiece(piece.id)} 
+        onClick={canInteract ? () => movePiece(piece.id) : undefined} 
       />
     );
   });
