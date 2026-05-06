@@ -12,11 +12,12 @@ type Event struct {
 }
 
 type Client struct {
-	Hub      *Hub
-	Conn     *websocket.Conn
-	Send     chan []byte
-	Color    string // Player color (e.g., "red", "green")
-	PlayerID string
+	Hub       *Hub
+	Conn      *websocket.Conn
+	Send      chan []byte
+	Color     string // Player color (e.g., "red", "green")
+	PlayerID  string
+	SessionID string
 }
 
 func (c *Client) ReadPump() {
@@ -33,7 +34,7 @@ func (c *Client) ReadPump() {
 			}
 			break
 		}
-		
+
 		// Send message to hub for routing
 		c.Hub.Incoming <- &ClientMessage{
 			Client:  c,

@@ -34,6 +34,7 @@ export function useGameSocket(url: string) {
 
         if (data.type === "PLAYER_ASSIGNED") {
           const color = (data.payload as { color: PlayerColor }).color;
+          localStorage.setItem("my-game-session", data.payload.sessionId);
           console.log("Assigned color:", color);
           setMyColor(color);
         }

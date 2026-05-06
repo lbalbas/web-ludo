@@ -3,6 +3,8 @@ package ws
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
+	"strconv"
 
 	"web-ludo-server/internal/game"
 )
@@ -28,6 +30,9 @@ type Hub struct {
 	// The overarching GameState for this basic single-match hub.
 	// Later we can scale to multiple hubs/matches.
 	GameState *game.GameState
+
+	// Sessions map client session IDs to player colors.
+	Sessions map[string]game.PlayerColor
 }
 
 func NewHub() *Hub {
@@ -37,6 +42,7 @@ func NewHub() *Hub {
 		Unregister: make(chan *Client),
 		Clients:    make(map[*Client]bool),
 		GameState:  game.CreateInitialGameState("global-match"),
+		Sessions:   make(map[string]game.PlayerColor),
 	}
 }
 
@@ -62,6 +68,19 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.Register:
+			//Check if the client is already registered (via session ID)
+			if _, ok := h.Sessions[client.SessionID]; ok {
+				//Assign same color to the client
+				client.Color = string(h.Sessions[client.SessionID])
+				client.PlayerID = string(h.Sessions[client.SessionID]) + "-player"
+				h.Clients[client] = true
+				h.sendTo(client, Event{
+					Type:    "PLAYER_ASSIGNED",
+					Payload: json.RawMessage(`{"color":"` + client.Color + `", "sessionId":"` + client.SessionID + `"}`),
+				})
+				h.broadcastState()
+				continue
+			}
 			color := h.nextAvailableColor()
 			if color == "" {
 				// Game is full — reject the client.
@@ -77,6 +96,7 @@ func (h *Hub) Run() {
 			// Assign identity to the client.
 			client.Color = string(color)
 			client.PlayerID = string(color) + "-player"
+			client.SessionID = strconv.Itoa(int(rand.Uint32()))
 			h.Clients[client] = true
 
 			// Add player to game state.
@@ -90,9 +110,9 @@ func (h *Hub) Run() {
 			// Tell this specific client what color they are.
 			h.sendTo(client, Event{
 				Type:    "PLAYER_ASSIGNED",
-				Payload: json.RawMessage(`{"color":"` + string(color) + `"}`),
+				Payload: json.RawMessage(`{"color":"` + string(color) + `", "sessionId":"` + client.SessionID + `"}`),
 			})
-
+			h.Sessions[client.SessionID] = color
 			// Broadcast updated state to everyone.
 			h.broadcastState()
 
@@ -109,6 +129,7 @@ func (h *Hub) Run() {
 				// If no players remain, reset the game.
 				if len(h.GameState.Players) == 0 {
 					h.GameState = game.CreateInitialGameState("global-match")
+					h.Sessions = make(map[string]game.PlayerColor)
 					log.Println("All players left — game reset")
 				} else {
 					// If it was this player's turn, advance to the next player still in the game.

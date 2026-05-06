@@ -17,6 +17,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	sessionID := r.URL.Query().Get("sessionId")
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("upgrade err:", err)
@@ -24,13 +25,14 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &Client{
-		Hub:  hub,
-		Conn: conn,
-		Send: make(chan []byte, 256),
+		Hub:       hub,
+		Conn:      conn,
+		SessionID: sessionID,
+		Send:      make(chan []byte, 256),
 	}
 	client.Hub.Register <- client
 
-	// Allow collection of memory referenced by the caller by doing all work in
+	// Allow collection of memory referenced .by the caller by doing all work in
 	// new goroutines.
 	go client.WritePump()
 	go client.ReadPump()
