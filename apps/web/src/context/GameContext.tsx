@@ -11,6 +11,7 @@ interface GameContextType {
   isMyTurn: boolean;
   rollDice: () => void;
   movePiece: (pieceId: string) => void;
+  leaveGame: () => void;
   _testSetState?: (newState: Partial<GameState>) => void;
 }
 
@@ -18,18 +19,13 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GameState>(createInitialGameState());
-  const sessionId = useRef<string | null>(
-    localStorage.getItem("my-game-session"),
-  );
 
   const {
     status,
     gameState: socketGameState,
     myColor,
     sendEvent,
-  } = useGameSocket(
-    `ws://localhost:8080/ws?sessionId=${sessionId.current || ""}`,
-  );
+  } = useGameSocket(`ws://localhost:8080/ws`);
 
   useEffect(() => {
     if (socketGameState) {
@@ -53,6 +49,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, ...newState }));
   };
 
+  const leaveGame = () => {
+    sendEvent("LEAVE_GAME");
+    localStorage.removeItem("my-game-session");
+    window.location.reload();
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -63,6 +65,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         rollDice,
         movePiece,
         _testSetState,
+        leaveGame,
       }}
     >
       {children}

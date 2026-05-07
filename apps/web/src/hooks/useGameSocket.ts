@@ -8,15 +8,32 @@ interface GameEvent {
   payload: any;
 }
 
-export function useGameSocket(url: string) {
+function getOrCreateSessionId(): string {
+  const saved = localStorage.getItem("my-game-session");
+  if (saved) return saved;
+  const newId = Math.random().toString(36).substring(2, 15);
+  localStorage.setItem("my-game-session", newId);
+  return newId;
+}
+
+export function useGameSocket(baseUrl: string) {
   const [status, setStatus] = useState<SocketStatus>("connecting");
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [myColor, setMyColor] = useState<PlayerColor | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
+  // Compute the session ID once and store it in a ref.
+  // useRef does NOT accept a lazy initializer — it would store the function
+  // itself as .current. We call the helper immediately instead.
+  const sessionId = useRef<string>(getOrCreateSessionId());
+
   const connect = useCallback(() => {
     console.log("Connecting to WebSocket...");
-    const ws = new WebSocket(url);
+    // Append session ID to the URL
+    const url = new URL(baseUrl);
+    url.searchParams.set("sessionId", sessionId.current);
+
+    const ws = new WebSocket(url.toString());
     socketRef.current = ws;
 
     ws.onopen = () => {
@@ -34,7 +51,6 @@ export function useGameSocket(url: string) {
 
         if (data.type === "PLAYER_ASSIGNED") {
           const color = (data.payload as { color: PlayerColor }).color;
-          localStorage.setItem("my-game-session", data.payload.sessionId);
           console.log("Assigned color:", color);
           setMyColor(color);
         }
@@ -51,7 +67,10 @@ export function useGameSocket(url: string) {
     ws.onclose = () => {
       console.log("WebSocket Disconnected");
       setStatus("disconnected");
-      setMyColor(null);
+      // Don't clear myColor here — the server remembers our session,
+      // so after reconnect we'll get PLAYER_ASSIGNED with the same color.
+      // Clearing it causes a UI flash and loses context during brief disconnects.
+
       // Simple reconnection logic
       setTimeout(() => {
         if (socketRef.current?.readyState === WebSocket.CLOSED) {
@@ -65,7 +84,7 @@ export function useGameSocket(url: string) {
       console.error("WebSocket Error:", err);
       setStatus("error");
     };
-  }, [url]);
+  }, [baseUrl]);
 
   useEffect(() => {
     connect();

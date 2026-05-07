@@ -3,8 +3,6 @@ package ws
 import (
 	"encoding/json"
 	"log"
-	"math/rand"
-	"strconv"
 
 	"web-ludo-server/internal/game"
 )
@@ -68,22 +66,40 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.Register:
-			//Check if the client is already registered (via session ID)
-			if _, ok := h.Sessions[client.SessionID]; ok {
-				//Assign same color to the client
-				client.Color = string(h.Sessions[client.SessionID])
-				client.PlayerID = string(h.Sessions[client.SessionID]) + "-player"
-				h.Clients[client] = true
-				h.sendTo(client, Event{
-					Type:    "PLAYER_ASSIGNED",
-					Payload: json.RawMessage(`{"color":"` + client.Color + `", "sessionId":"` + client.SessionID + `"}`),
-				})
-				h.broadcastState()
-				continue
+			// 1. Reconnection Logic: Check if we recognize this SessionID
+			if client.SessionID != "" {
+				if color, ok := h.Sessions[client.SessionID]; ok {
+					client.Color = string(color)
+					client.PlayerID = string(color) + "-player"
+					h.Clients[client] = true
+
+					// Ensure they are back in the GameState roster if they were removed
+					playerExists := false
+					for _, p := range h.GameState.Players {
+						if p.Color == color {
+							playerExists = true
+							break
+						}
+					}
+					if !playerExists {
+						h.GameState.Players = append(h.GameState.Players, game.PlayerData{
+							Color: color,
+							ID:    client.PlayerID,
+						})
+					}
+
+					h.sendTo(client, Event{
+						Type:    "PLAYER_ASSIGNED",
+						Payload: json.RawMessage(`{"color":"` + client.Color + `", "sessionId":"` + client.SessionID + `"}`),
+					})
+					h.broadcastState()
+					continue
+				}
 			}
+
+			// 2. New Player Logic
 			color := h.nextAvailableColor()
 			if color == "" {
-				// Game is full — reject the client.
 				log.Printf("Game full, rejecting client")
 				h.sendTo(client, Event{
 					Type:    "ERROR",
@@ -93,13 +109,16 @@ func (h *Hub) Run() {
 				continue
 			}
 
-			// Assign identity to the client.
+			// Assign identity
 			client.Color = string(color)
 			client.PlayerID = string(color) + "-player"
-			client.SessionID = strconv.Itoa(int(rand.Uint32()))
 			h.Clients[client] = true
 
-			// Add player to game state.
+			// Store session (only if client provided one, which they always should now)
+			if client.SessionID != "" {
+				h.Sessions[client.SessionID] = color
+			}
+
 			h.GameState.Players = append(h.GameState.Players, game.PlayerData{
 				Color: color,
 				ID:    client.PlayerID,
@@ -107,37 +126,40 @@ func (h *Hub) Run() {
 
 			log.Printf("Player joined as %s (%d/%d)", color, len(h.GameState.Players), len(availableColors))
 
-			// Tell this specific client what color they are.
 			h.sendTo(client, Event{
 				Type:    "PLAYER_ASSIGNED",
 				Payload: json.RawMessage(`{"color":"` + string(color) + `", "sessionId":"` + client.SessionID + `"}`),
 			})
-			h.Sessions[client.SessionID] = color
-			// Broadcast updated state to everyone.
 			h.broadcastState()
 
 		case client := <-h.Unregister:
 			if _, ok := h.Clients[client]; ok {
 				delete(h.Clients, client)
 				close(client.Send)
-
-				// Remove the player from the game state.
-				h.removePlayer(game.PlayerColor(client.Color))
-
-				log.Printf("Player %s left (%d/%d)", client.Color, len(h.GameState.Players), len(availableColors))
-
-				// If no players remain, reset the game.
-				if len(h.GameState.Players) == 0 {
-					h.GameState = game.CreateInitialGameState("global-match")
-					h.Sessions = make(map[string]game.PlayerColor)
-					log.Println("All players left — game reset")
-				} else {
-					// If it was this player's turn, advance to the next player still in the game.
-					if game.PlayerColor(client.Color) == h.GameState.CurrentTurn {
-						h.GameState.DiceValue = nil
-						h.advanceTurnToActivePlayer()
+				if client.IsLeaving {
+					// Remove the session mapping so the color slot is freed for others.
+					if client.SessionID != "" {
+						delete(h.Sessions, client.SessionID)
 					}
-					h.broadcastState()
+
+					// Remove the player from the game state.
+					h.removePlayer(game.PlayerColor(client.Color))
+
+					log.Printf("Player %s left (%d/%d)", client.Color, len(h.GameState.Players), len(availableColors))
+
+					// If no players remain, reset the game.
+					if len(h.GameState.Players) == 0 {
+						h.GameState = game.CreateInitialGameState("global-match")
+						h.Sessions = make(map[string]game.PlayerColor)
+						log.Println("All players left — game reset")
+					} else {
+						// If it was this player's turn, advance to the next player still in the game.
+						if game.PlayerColor(client.Color) == h.GameState.CurrentTurn {
+							h.GameState.DiceValue = nil
+							h.advanceTurnToActivePlayer()
+						}
+						h.broadcastState()
+					}
 				}
 			}
 
@@ -213,6 +235,9 @@ func (h *Hub) handleMessage(clientMsg *ClientMessage) {
 			h.GameState.MovePiece(movePayload.PieceID)
 			h.broadcastState()
 		}
+
+	case "LEAVE_GAME":
+		clientMsg.Client.IsLeaving = true
 	}
 }
 

@@ -18,6 +18,7 @@ type Client struct {
 	Color     string // Player color (e.g., "red", "green")
 	PlayerID  string
 	SessionID string
+	IsLeaving bool
 }
 
 func (c *Client) ReadPump() {
