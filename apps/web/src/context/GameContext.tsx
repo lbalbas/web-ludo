@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { createContext, useState } from "react";
 import type { ReactNode } from "react";
 import type { GameState, PlayerColor } from "../types/game";
 import { createInitialGameState } from "../types/game";
@@ -15,25 +15,20 @@ interface GameContextType {
   _testSetState?: (newState: Partial<GameState>) => void;
 }
 
-const GameContext = createContext<GameContextType | undefined>(undefined);
+export const GameContext = createContext<GameContextType | undefined>(undefined);
 
-export function GameProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<GameState>(createInitialGameState());
-
+export function GameProvider({ children, lobbyId }: { children: ReactNode; lobbyId: string | null }) {
   const {
     status,
     gameState: socketGameState,
     myColor,
     sendEvent,
-  } = useGameSocket(`ws://localhost:8080/ws`);
+  } = useGameSocket(`ws://localhost:8080/ws`, lobbyId);
 
-  useEffect(() => {
-    if (socketGameState) {
-      setState(socketGameState);
-    }
-  }, [socketGameState]);
+  const state = socketGameState ?? createInitialGameState();
 
   const isMyTurn = myColor !== null && state.currentTurn === myColor;
+
 
   const rollDice = () => {
     if (!isMyTurn) return;
@@ -45,8 +40,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
     sendEvent("MOVE_PIECE", { pieceId });
   };
 
+  const [_overrideState, _setOverrideState] = useState<Partial<GameState> | null>(null);
+  const effectiveState = _overrideState ? { ...state, ..._overrideState } : state;
+
   const _testSetState = (newState: Partial<GameState>) => {
-    setState((prev) => ({ ...prev, ...newState }));
+    _setOverrideState((prev) => ({ ...prev, ...newState }));
   };
 
   const leaveGame = () => {
@@ -58,7 +56,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   return (
     <GameContext.Provider
       value={{
-        state,
+        state: effectiveState,
         status,
         myColor,
         isMyTurn,
@@ -71,12 +69,4 @@ export function GameProvider({ children }: { children: ReactNode }) {
       {children}
     </GameContext.Provider>
   );
-}
-
-export function useGame() {
-  const context = useContext(GameContext);
-  if (context === undefined) {
-    throw new Error("useGame must be used within a GameProvider");
-  }
-  return context;
 }

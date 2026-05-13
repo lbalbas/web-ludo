@@ -1,50 +1,52 @@
 import { useEffect, useRef, useState } from "react";
 import { Board } from "../components/game/Board";
-import { GameProvider, useGame } from "../context/GameContext";
+import { GameProvider } from "../context/GameContext";
+import { useGame } from "../hooks/useGame";
 import { Dice } from "../components/game/Dice";
 
 interface GamePageProps {
   onLeave: () => void;
+  lobbyId: string | null;
 }
+
+const colorConfig = {
+  red: {
+    name: "Red",
+    bg: "bg-red-500/20",
+    border: "border-red-500/40",
+    text: "text-red-400",
+    dot: "bg-red-500",
+    shadow: "shadow-[0_0_10px_rgba(239,68,68,0.8)]",
+  },
+  green: {
+    name: "Green",
+    bg: "bg-green-500/20",
+    border: "border-green-500/40",
+    text: "text-green-400",
+    dot: "bg-green-500",
+    shadow: "shadow-[0_0_10px_rgba(34,197,94,0.8)]",
+  },
+  yellow: {
+    name: "Yellow",
+    bg: "bg-yellow-500/20",
+    border: "border-yellow-500/40",
+    text: "text-yellow-400",
+    dot: "bg-yellow-500",
+    shadow: "shadow-[0_0_10px_rgba(234,179,8,0.8)]",
+  },
+  blue: {
+    name: "Blue",
+    bg: "bg-blue-500/20",
+    border: "border-blue-500/40",
+    text: "text-blue-400",
+    dot: "bg-blue-500",
+    shadow: "shadow-[0_0_10px_rgba(59,130,246,0.8)]",
+  },
+};
 
 // Inner component to access context
 function GameLayout({ onLeave }: GamePageProps) {
   const { state, status, myColor, isMyTurn, leaveGame } = useGame();
-
-  const colorConfig = {
-    red: {
-      name: "Red",
-      bg: "bg-red-500/20",
-      border: "border-red-500/40",
-      text: "text-red-400",
-      dot: "bg-red-500",
-      shadow: "shadow-[0_0_10px_rgba(239,68,68,0.8)]",
-    },
-    green: {
-      name: "Green",
-      bg: "bg-green-500/20",
-      border: "border-green-500/40",
-      text: "text-green-400",
-      dot: "bg-green-500",
-      shadow: "shadow-[0_0_10px_rgba(34,197,94,0.8)]",
-    },
-    yellow: {
-      name: "Yellow",
-      bg: "bg-yellow-500/20",
-      border: "border-yellow-500/40",
-      text: "text-yellow-400",
-      dot: "bg-yellow-500",
-      shadow: "shadow-[0_0_10px_rgba(234,179,8,0.8)]",
-    },
-    blue: {
-      name: "Blue",
-      bg: "bg-blue-500/20",
-      border: "border-blue-500/40",
-      text: "text-blue-400",
-      dot: "bg-blue-500",
-      shadow: "shadow-[0_0_10px_rgba(59,130,246,0.8)]",
-    },
-  };
 
   const activeColor = colorConfig[state.currentTurn];
 
@@ -63,7 +65,7 @@ function GameLayout({ onLeave }: GamePageProps) {
     if (state.status === "playing") {
       prevTurnRef.current = state.currentTurn;
     }
-  }, [state.status, state.currentTurn]);
+  }, [state.status, state.currentTurn, winner]);
 
   // Connection status indicator
   const statusConfig = {
@@ -107,7 +109,7 @@ function GameLayout({ onLeave }: GamePageProps) {
         {/* Left/Top Sidebar (Controls/Stats) */}
         <div className="glass-panel p-6 rounded-2xl w-full lg:w-80 flex flex-col gap-6 shadow-2xl">
           <div className="flex justify-between items-center border-b border-white/10 pb-4">
-            <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+            <h2 className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-emerald-400">
               Online Match
             </h2>
             <button
@@ -220,7 +222,7 @@ function GameLayout({ onLeave }: GamePageProps) {
         </div>
 
         {/* Board Area */}
-        <div className="flex-1 w-full max-w-[800px] flex justify-center items-center">
+        <div className="flex-1 w-full max-w-200 flex justify-center items-center">
           <Board />
         </div>
       </div>
@@ -228,10 +230,10 @@ function GameLayout({ onLeave }: GamePageProps) {
   );
 }
 
-export function GamePage({ onLeave }: GamePageProps) {
+export function GamePage({ onLeave, lobbyId }: GamePageProps) {
   return (
-    <GameProvider>
-      <GameLayout onLeave={onLeave} />
+    <GameProvider lobbyId={lobbyId}>
+      <GameLayout onLeave={onLeave} lobbyId={lobbyId} />
     </GameProvider>
   );
 }

@@ -16,22 +16,23 @@ function getOrCreateSessionId(): string {
   return newId;
 }
 
-export function useGameSocket(baseUrl: string) {
+export function useGameSocket(baseUrl: string, lobbyId: string | null) {
   const [status, setStatus] = useState<SocketStatus>("connecting");
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [myColor, setMyColor] = useState<PlayerColor | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
   // Compute the session ID once and store it in a ref.
-  // useRef does NOT accept a lazy initializer — it would store the function
-  // itself as .current. We call the helper immediately instead.
   const sessionId = useRef<string>(getOrCreateSessionId());
 
   const connect = useCallback(() => {
+    if (!lobbyId) return;
+
     console.log("Connecting to WebSocket...");
-    // Append session ID to the URL
+    // Append session ID and lobby ID to the URL
     const url = new URL(baseUrl);
     url.searchParams.set("sessionId", sessionId.current);
+    url.searchParams.set("hubId", lobbyId);
 
     const ws = new WebSocket(url.toString());
     socketRef.current = ws;
