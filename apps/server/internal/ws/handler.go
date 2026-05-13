@@ -20,10 +20,10 @@ func ServeWs(hubManager *HubManager, w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Query().Get("sessionId")
 	hubID := r.URL.Query().Get("hubId")
 
-	hub, ok := hubManager.hubs[hubID]
+	hub, ok := hubManager.GetHub(hubID)
 
 	if !ok {
-		http.Error(w, "lobby not found", http.StatusNotFound)
+		http.Error(w, "Lobby not found", http.StatusNotFound)
 		return
 	}
 

@@ -33,13 +33,13 @@ type Hub struct {
 	Sessions map[string]game.PlayerColor
 }
 
-func NewHub() *Hub {
+func NewHub(id string) *Hub {
 	return &Hub{
 		Incoming:   make(chan *ClientMessage),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Clients:    make(map[*Client]bool),
-		GameState:  game.CreateInitialGameState("global-match"),
+		GameState:  game.CreateInitialGameState(id),
 		Sessions:   make(map[string]game.PlayerColor),
 	}
 }
