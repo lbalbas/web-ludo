@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
 )
 
 func main() {
@@ -17,8 +18,7 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	hub := ws.NewHub()
-	go hub.Run()
+	hubManager := ws.NewHubManager()
 
 	r.Get("/api", func(w http.ResponseWriter, r *http.Request) {
 		response := map[string]string{
@@ -30,8 +30,14 @@ func main() {
 		json.NewEncoder(w).Encode(response)
 	})
 
+	r.Post("/api/lobbies", func(w http.ResponseWriter, r *http.Request) {
+		hubID := uuid.New().String()
+		hubManager.CreateHub(hubID)
+		w.Write([]byte(hubID))
+	})
+
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
-		ws.ServeWs(hub, w, r)
+		ws.ServeWs(hubManager, w, r)
 	})
 
 	log.Println("Server starting on port 8080...")

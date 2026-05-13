@@ -16,8 +16,17 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func ServeWs(hubManager *HubManager, w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Query().Get("sessionId")
+	hubID := r.URL.Query().Get("hubId")
+
+	hub, ok := hubManager.hubs[hubID]
+
+	if !ok {
+		log.Println("hub not found:", hubID)
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("upgrade err:", err)
@@ -28,8 +37,10 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		Hub:       hub,
 		Conn:      conn,
 		SessionID: sessionID,
+		HubID:     hubID,
 		Send:      make(chan []byte, 256),
 	}
+
 	client.Hub.Register <- client
 
 	// Allow collection of memory referenced .by the caller by doing all work in
