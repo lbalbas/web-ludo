@@ -34,3 +34,13 @@ func (l *HubManager) RemoveHub(id string) {
 	defer l.mu.Unlock()
 	delete(l.hubs, id)
 }
+
+func (l *HubManager) ListHubs() []string {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	ids := make([]string, 0, len(l.hubs))
+	for id := range l.hubs {
+		ids = append(ids, id)
+	}
+	return ids
+}
