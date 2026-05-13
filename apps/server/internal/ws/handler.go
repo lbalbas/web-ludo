@@ -23,7 +23,7 @@ func ServeWs(hubManager *HubManager, w http.ResponseWriter, r *http.Request) {
 	hub, ok := hubManager.hubs[hubID]
 
 	if !ok {
-		log.Println("hub not found:", hubID)
+		http.Error(w, "lobby not found", http.StatusNotFound)
 		return
 	}
 
