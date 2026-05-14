@@ -4,6 +4,7 @@ import type { GameState, PlayerColor } from "../types/game";
 import { createInitialGameState } from "../types/game";
 import { useGameSocket } from "../hooks/useGameSocket";
 import { useLocalGame } from "../hooks/useLocalGame";
+import { WS_URL } from "../config";
 
 interface GameContextType {
   state: GameState;
@@ -34,7 +35,7 @@ export function GameProvider({
     gameState: socketGameState,
     myColor: socketMyColor,
     sendEvent,
-  } = useGameSocket(`ws://localhost:8080/ws`, isLocal ? null : lobbyId);
+  } = useGameSocket(WS_URL, isLocal ? null : lobbyId);
 
   // --- Local path ---
   // Always called (Rules of Hooks); only active when isLocal is true.
