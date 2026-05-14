@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"os"
 	"web-ludo-server/internal/ws"
 
 	"github.com/go-chi/chi/v5"
@@ -19,8 +20,13 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
+	if allowedOrigin == "" {
+		allowedOrigin = "http://localhost:5173"
+	}
+
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedOrigins:   []string{allowedOrigin},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
@@ -54,8 +60,13 @@ func main() {
 		ws.ServeWs(hubManager, w, r)
 	})
 
-	log.Println("Server starting on port 8080...")
-	err := http.ListenAndServe(":8080", r)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Server starting on port %s...\n", port)
+	err := http.ListenAndServe(":"+port, r)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}

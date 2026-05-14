@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_URL } from "../config";
 
 interface LobbyBrowserProps {
   onJoin: (id: string) => void;
@@ -13,7 +14,7 @@ export function LobbyBrowser({ onJoin, onClose }: LobbyBrowserProps) {
   const fetchLobbies = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8080/api/lobbies");
+      const response = await fetch(`${API_URL}/lobbies`);
       if (!response.ok) throw new Error("Failed to fetch lobbies");
       const data = await response.json();
       setLobbies(data);

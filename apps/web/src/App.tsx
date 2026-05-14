@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { GamePage } from "./pages/GamePage";
 import { LobbyBrowser } from "./components/LobbyBrowser";
+import { API_URL } from "./config";
 
 function App() {
   const [view, setView] = useState<"landing" | "game" | "browser">("landing");
@@ -11,7 +12,7 @@ function App() {
 
   useEffect(() => {
     if (view === "landing") {
-      fetch("http://localhost:8080/api/lobbies")
+      fetch(`${API_URL}/lobbies`)
         .then((res) => res.json())
         .then((data) => setLobbiesCount(data.length))
         .catch(() => setLobbiesCount(0));
@@ -20,7 +21,7 @@ function App() {
 
   const createLobby = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/lobbies", {
+      const response = await fetch(`${API_URL}/lobbies`, {
         method: "POST",
       });
       if (!response.ok) throw new Error("Failed to create lobby");

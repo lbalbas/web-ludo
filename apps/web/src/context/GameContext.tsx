@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { GameState, PlayerColor } from "../types/game";
 import { createInitialGameState } from "../types/game";
 import { useGameSocket } from "../hooks/useGameSocket";
+import { WS_URL } from "../config";
 
 interface GameContextType {
   state: GameState;
@@ -23,7 +24,7 @@ export function GameProvider({ children, lobbyId }: { children: ReactNode; lobby
     gameState: socketGameState,
     myColor,
     sendEvent,
-  } = useGameSocket(`ws://localhost:8080/ws`, lobbyId);
+  } = useGameSocket(WS_URL, lobbyId);
 
   const state = socketGameState ?? createInitialGameState();
 
