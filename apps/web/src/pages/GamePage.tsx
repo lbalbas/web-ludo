@@ -155,7 +155,7 @@ function GameLayout({ onLeave }: GamePageProps) {
             <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-widest">
               Players ({state.players.length}/4)
             </h3>
-            {(["red", "green", "blue", "yellow"] as const).map((color) => {
+            {(["red", "green", "yellow", "blue"] as const).map((color) => {
               const player = state.players.find((p) => p.color === color);
               const isTurn = state.currentTurn === color;
               const isMe = myColor === color;
