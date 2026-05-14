@@ -2,7 +2,7 @@ import React from 'react';
 import { Cell } from './Cell';
 import type { CellType, PlayerColor } from './Cell';
 import { Piece } from './Piece';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../hooks/useGame';
 import { getPieceCoordinate } from '../../utils/boardCoordinates';
 
 // Helper to determine cell type mathematically strictly based on standard 15x15 Ludo board mapping

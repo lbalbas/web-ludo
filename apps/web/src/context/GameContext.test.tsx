@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { MockInstance } from 'vitest';
 
 import { GameProvider } from '../context/GameContext';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../hooks/useGame';
 import { createInitialGameState } from '../types/game';
 import type { GameState } from '../types/game';
 import React from 'react';
