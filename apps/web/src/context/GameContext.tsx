@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { GameState, PlayerColor } from "../types/game";
 import { createInitialGameState } from "../types/game";
 import { useGameSocket } from "../hooks/useGameSocket";
-import { WS_URL } from "../config";
+import { useLocalGame } from "../hooks/useLocalGame";
 
 interface GameContextType {
   state: GameState;
@@ -18,40 +18,90 @@ interface GameContextType {
 
 export const GameContext = createContext<GameContextType | undefined>(undefined);
 
-export function GameProvider({ children, lobbyId }: { children: ReactNode; lobbyId: string | null }) {
+export function GameProvider({
+  children,
+  lobbyId,
+}: {
+  children: ReactNode;
+  lobbyId: string | null;
+}) {
+  const isLocal = lobbyId === "local-match";
+
+  // --- Online path ---
+  // Pass null when in local mode so the socket never connects.
   const {
-    status,
+    status: socketStatus,
     gameState: socketGameState,
-    myColor,
+    myColor: socketMyColor,
     sendEvent,
-  } = useGameSocket(WS_URL, lobbyId);
+  } = useGameSocket(`ws://localhost:8080/ws`, isLocal ? null : lobbyId);
 
-  const state = socketGameState ?? createInitialGameState();
+  // --- Local path ---
+  // Always called (Rules of Hooks); only active when isLocal is true.
+  const {
+    state: localState,
+    myColor: localMyColor,
+    rollDice: localRollDice,
+    movePiece: localMovePiece,
+    overrideState: localOverrideState,
+  } = useLocalGame(isLocal);
 
-  const isMyTurn = myColor !== null && state.currentTurn === myColor;
+  // --- Unified values ---
+  const state = isLocal
+    ? localState
+    : socketGameState ?? createInitialGameState();
 
+  const myColor: PlayerColor | null = isLocal ? localMyColor : socketMyColor;
 
+  const status: GameContextType["status"] = isLocal ? "connected" : socketStatus;
+
+  // In hot-seat mode it is always "your" turn (whoever is sitting can play).
+  const isMyTurn = isLocal
+    ? true
+    : myColor !== null && state.currentTurn === myColor;
+
+  // --- Override state (for tests / dev) ---
+  const [_onlineOverride, _setOnlineOverride] = useState<Partial<GameState> | null>(null);
+  const effectiveState = isLocal
+    ? localState
+    : _onlineOverride
+    ? { ...state, ..._onlineOverride }
+    : state;
+
+  const _testSetState = (patch: Partial<GameState>) => {
+    if (isLocal) {
+      localOverrideState(patch);
+    } else {
+      _setOnlineOverride((prev) => ({ ...prev, ...patch }));
+    }
+  };
+
+  // --- Actions ---
   const rollDice = () => {
-    if (!isMyTurn) return;
-    sendEvent("ROLL_DICE");
+    if (isLocal) {
+      localRollDice();
+    } else {
+      if (!isMyTurn) return;
+      sendEvent("ROLL_DICE");
+    }
   };
 
   const movePiece = (pieceId: string) => {
-    if (!isMyTurn) return;
-    sendEvent("MOVE_PIECE", { pieceId });
-  };
-
-  const [_overrideState, _setOverrideState] = useState<Partial<GameState> | null>(null);
-  const effectiveState = _overrideState ? { ...state, ..._overrideState } : state;
-
-  const _testSetState = (newState: Partial<GameState>) => {
-    _setOverrideState((prev) => ({ ...prev, ...newState }));
+    if (isLocal) {
+      localMovePiece(pieceId);
+    } else {
+      if (!isMyTurn) return;
+      sendEvent("MOVE_PIECE", { pieceId });
+    }
   };
 
   const leaveGame = () => {
-    sendEvent("LEAVE_GAME");
-    localStorage.removeItem("my-game-session");
-    window.location.reload();
+    if (!isLocal) {
+      sendEvent("LEAVE_GAME");
+      localStorage.removeItem("my-game-session");
+      window.location.reload();
+    }
+    // Local mode: onLeave() in GamePage handles navigation; nothing to clean up here.
   };
 
   return (
