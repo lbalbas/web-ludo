@@ -13,6 +13,9 @@ type ClientMessage struct {
 }
 
 type Hub struct {
+	// The unique ID for this hub/lobby.
+	ID string
+
 	// Registered clients.
 	Clients map[*Client]bool
 
@@ -26,7 +29,6 @@ type Hub struct {
 	Unregister chan *Client
 
 	// The overarching GameState for this basic single-match hub.
-	// Later we can scale to multiple hubs/matches.
 	GameState *game.GameState
 
 	// Sessions map client session IDs to player colors.
@@ -35,6 +37,7 @@ type Hub struct {
 
 func NewHub(id string) *Hub {
 	return &Hub{
+		ID:         id,
 		Incoming:   make(chan *ClientMessage),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
@@ -149,7 +152,7 @@ func (h *Hub) Run() {
 
 					// If no players remain, reset the game.
 					if len(h.GameState.Players) == 0 {
-						h.GameState = game.CreateInitialGameState("global-match")
+						h.GameState = game.CreateInitialGameState(h.ID)
 						h.Sessions = make(map[string]game.PlayerColor)
 						log.Println("All players left — game reset")
 					} else {
