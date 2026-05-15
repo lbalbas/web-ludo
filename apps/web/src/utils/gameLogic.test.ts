@@ -6,8 +6,6 @@ import {
   getNextTurn,
   rollDiceLogic,
   movePieceLogic,
-  HOME_ENTRY_POSITIONS,
-  SAFE_POSITIONS,
 } from './gameLogic';
 
 // --- Helpers ---
