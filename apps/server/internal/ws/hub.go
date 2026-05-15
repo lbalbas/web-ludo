@@ -16,6 +16,9 @@ type Hub struct {
 	// The unique ID for this hub/lobby.
 	ID string
 
+	// Whether this lobby is hidden from the public list.
+	IsPrivate bool
+
 	// Registered clients.
 	Clients map[*Client]bool
 
@@ -35,9 +38,10 @@ type Hub struct {
 	Sessions map[string]game.PlayerColor
 }
 
-func NewHub(id string) *Hub {
+func NewHub(id string, isPrivate bool) *Hub {
 	return &Hub{
 		ID:         id,
+		IsPrivate:  isPrivate,
 		Incoming:   make(chan *ClientMessage),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),

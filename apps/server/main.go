@@ -46,7 +46,8 @@ func main() {
 
 	r.Post("/api/lobbies", func(w http.ResponseWriter, r *http.Request) {
 		hubID := uuid.New().String()
-		hubManager.CreateHub(hubID)
+		isPrivate := r.URL.Query().Get("private") == "true"
+		hubManager.CreateHub(hubID, isPrivate)
 		w.Write([]byte(hubID))
 	})
 

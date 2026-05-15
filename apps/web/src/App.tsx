@@ -1,14 +1,27 @@
 import { useState, useEffect } from "react";
 import { GamePage } from "./pages/GamePage";
 import { LobbyBrowser } from "./components/LobbyBrowser";
+import { CreateLobbyModal } from "./components/CreateLobbyModal";
 import { API_URL } from "./config";
 
 function App() {
-  const [view, setView] = useState<"landing" | "game" | "browser">("landing");
+  const [view, setView] = useState<"landing" | "game" | "browser" | "creating">("landing");
   const [activeLobbyId, setActiveLobbyId] = useState<string | null>(null);
   const [lobbiesCount, setLobbiesCount] = useState<number | undefined>(
     undefined,
   );
+
+  // Auto-join via URL parameter (e.g. ?lobby=<uuid> for private lobby links)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const lobbyParam = params.get("lobby");
+    if (lobbyParam) {
+      // Clean the URL so it doesn't re-trigger on refresh after leaving
+      window.history.replaceState({}, "", window.location.pathname);
+      setActiveLobbyId(lobbyParam);
+      setView("game");
+    }
+  }, []);
 
   useEffect(() => {
     if (view === "landing") {
@@ -18,21 +31,6 @@ function App() {
         .catch(() => setLobbiesCount(0));
     }
   }, [view]);
-
-  const createLobby = async () => {
-    try {
-      const response = await fetch(`${API_URL}/lobbies`, {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error("Failed to create lobby");
-      const lobbyId = await response.text();
-      setActiveLobbyId(lobbyId);
-      setView("game");
-    } catch (err) {
-      console.error("Error creating lobby:", err);
-      alert("Could not create lobby. Is the server running?");
-    }
-  };
 
   const joinLobby = (id: string) => {
     setActiveLobbyId(id);
@@ -56,6 +54,14 @@ function App() {
       {/* Lobby Browser Modal */}
       {view === "browser" && (
         <LobbyBrowser onJoin={joinLobby} onClose={() => setView("landing")} />
+      )}
+
+      {/* Create Lobby Modal */}
+      {view === "creating" && (
+        <CreateLobbyModal
+          onJoin={joinLobby}
+          onClose={() => setView("landing")}
+        />
       )}
 
       {/* Background Decorators */}
@@ -102,7 +108,7 @@ function App() {
           </button>
 
           <button
-            onClick={createLobby}
+            onClick={() => setView("creating")}
             className="px-8 py-3 rounded-xl font-bold text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-all flex-1 max-w-[200px]"
           >
             Create Lobby

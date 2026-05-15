@@ -13,8 +13,8 @@ func NewHubManager() *HubManager {
 	}
 }
 
-func (l *HubManager) CreateHub(id string) {
-	hub := NewHub(id)
+func (l *HubManager) CreateHub(id string, isPrivate bool) {
+	hub := NewHub(id, isPrivate)
 	go hub.Run()
 
 	l.mu.Lock()
@@ -35,12 +35,15 @@ func (l *HubManager) RemoveHub(id string) {
 	delete(l.hubs, id)
 }
 
+// ListHubs returns the IDs of all public (non-private) hubs.
 func (l *HubManager) ListHubs() []string {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	ids := make([]string, 0, len(l.hubs))
-	for id := range l.hubs {
-		ids = append(ids, id)
+	for id, hub := range l.hubs {
+		if !hub.IsPrivate {
+			ids = append(ids, id)
+		}
 	}
 	return ids
 }
