@@ -45,7 +45,7 @@ const colorConfig = {
 };
 
 // Inner component to access context
-function GameLayout({ onLeave }: GamePageProps) {
+function GameLayout({ onLeave, lobbyId }: GamePageProps) {
   const { state, status, myColor, isMyTurn, leaveGame } = useGame();
 
   const activeColor = colorConfig[state.currentTurn];
@@ -110,7 +110,7 @@ function GameLayout({ onLeave }: GamePageProps) {
         <div className="glass-panel p-6 rounded-2xl w-full lg:w-80 flex flex-col gap-6 shadow-2xl">
           <div className="flex justify-between items-center border-b border-white/10 pb-4">
             <h2 className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-emerald-400">
-              Online Match
+              {lobbyId === "local-match" ? "Local Match" : "Online Match"}
             </h2>
             <button
               onClick={() => {

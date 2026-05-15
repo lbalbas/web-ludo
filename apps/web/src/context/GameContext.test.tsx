@@ -9,9 +9,6 @@ import type { GameState } from '../types/game';
 import React from 'react';
 
 // Test harness that exposes GameContext state to the DOM for assertions
-// We add more buttons and data-testids to simulate the full game loop
-// Test harness that exposes GameContext state to the DOM for assertions
-// We add more buttons and data-testids to simulate the full game loop
 function TestHarness({
   initialOverride
 }: {
@@ -62,7 +59,7 @@ describe('GameContext Phase 1 behavior', () => {
 
   it('rolls a 6 and can move a piece out of home (out-of-home path)', async () => {
     randomSpy.mockReturnValue(0.999999); // forces 6
-    const { getByTestId } = render(<GameProvider><TestHarness /></GameProvider>);
+    const { getByTestId } = render(<GameProvider lobbyId="local-match"><TestHarness /></GameProvider>);
     fireEvent.click(getByTestId('roll'));
     expect(getByTestId('dice').textContent).toBe('6');
     fireEvent.click(getByTestId('move-red-0'));
@@ -70,14 +67,13 @@ describe('GameContext Phase 1 behavior', () => {
     expect(getByTestId('red-0-pos').textContent).toBe('0');
   });
 
-  it('rolls a non-6 and advances turn after timeout when no pieces are out', () => {
+  it('rolls a non-6 and skips turn immediately when no pieces are out', () => {
     randomSpy.mockReturnValue(0.2); // forces 2
-    const { getByTestId } = render(<GameProvider><TestHarness /></GameProvider>);
+    const { getByTestId } = render(<GameProvider lobbyId="local-match"><TestHarness /></GameProvider>);
     fireEvent.click(getByTestId('roll'));
-    expect(getByTestId('dice').textContent).toBe('2');
-    act(() => { vi.advanceTimersByTime(1000); });
-    expect(getByTestId('turn').textContent).toBe('green');
+    // rollDiceLogic skips turn synchronously when all pieces are home and non-6
     expect(getByTestId('dice').textContent).toBe('');
+    expect(getByTestId('turn').textContent).toBe('green');
   });
 
   it('captures an opponent piece when landing on their square (not a safe zone)', () => {
@@ -91,7 +87,7 @@ describe('GameContext Phase 1 behavior', () => {
         'green-0': { id: 'green-0', color: 'green', status: 'path', position: 5 }
       }
     };
-    const { getByTestId } = render(<GameProvider><TestHarness initialOverride={override} /></GameProvider>);
+    const { getByTestId } = render(<GameProvider lobbyId="local-match"><TestHarness initialOverride={override} /></GameProvider>);
     
     // Move red-0
     fireEvent.click(getByTestId('move-red-0'));
@@ -116,7 +112,7 @@ describe('GameContext Phase 1 behavior', () => {
         'green-0': { id: 'green-0', color: 'green', status: 'path', position: 8 }
       }
     };
-    const { getByTestId } = render(<GameProvider><TestHarness initialOverride={override} /></GameProvider>);
+    const { getByTestId } = render(<GameProvider lobbyId="local-match"><TestHarness initialOverride={override} /></GameProvider>);
     
     // Move red-0
     fireEvent.click(getByTestId('move-red-0'));
@@ -138,7 +134,7 @@ describe('GameContext Phase 1 behavior', () => {
         'red-0': { id: 'red-0', color: 'red', status: 'path', position: 48 },
       }
     };
-    const { getByTestId } = render(<GameProvider><TestHarness initialOverride={override} /></GameProvider>);
+    const { getByTestId } = render(<GameProvider lobbyId="local-match"><TestHarness initialOverride={override} /></GameProvider>);
     
     fireEvent.click(getByTestId('move-red-0'));
     
@@ -157,7 +153,7 @@ describe('GameContext Phase 1 behavior', () => {
         'red-0': { id: 'red-0', color: 'red', status: 'home-path', position: 3 },
       }
     };
-    const { getByTestId } = render(<GameProvider><TestHarness initialOverride={override} /></GameProvider>);
+    const { getByTestId } = render(<GameProvider lobbyId="local-match"><TestHarness initialOverride={override} /></GameProvider>);
     
     fireEvent.click(getByTestId('move-red-0'));
     
@@ -179,15 +175,11 @@ describe('GameContext Phase 1 behavior', () => {
         'red-3': { id: 'red-3', color: 'red', status: 'finished', position: 0 },
       }
     };
-    const { getByTestId } = render(<GameProvider><TestHarness initialOverride={override} /></GameProvider>);
+    const { getByTestId } = render(<GameProvider lobbyId="local-match"><TestHarness initialOverride={override} /></GameProvider>);
     
     fireEvent.click(getByTestId('move-red-0'));
     
-    // Status flips to 'finished'. 
-    // The GameContext logic currently sets status to 'finished' and returns the initial pieces but combined with 'finished'
-    // Actually, looking at GameContext.tsx:
-    // `return { ...createInitialGameState(), status: 'finished' };`
-    // This resets all pieces to `home` and sets status to `finished`.
+    // Status flips to 'finished' and pieces are reset to home
     expect(getByTestId('status').textContent).toBe('finished');
     expect(getByTestId('red-0-status').textContent).toBe('home'); // Has been reset
     expect(getByTestId('turn').textContent).toBe('red');

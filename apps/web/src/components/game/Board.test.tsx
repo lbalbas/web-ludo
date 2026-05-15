@@ -6,7 +6,7 @@ import { GameProvider } from '../../context/GameContext';
 describe('Board Component', () => {
   it('renders without crashing and outputs 225 cells (15x15)', () => {
     const { container } = render(
-      <GameProvider>
+      <GameProvider lobbyId="local-match">
         <Board />
       </GameProvider>
     );
