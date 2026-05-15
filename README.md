@@ -6,7 +6,6 @@ A multiplayer online Ludo game designed as a learning / portfolio project. The g
 - **Frontend**: A Single Page Application built with **React**, **TypeScript**, and **Vite**.
 - **Backend API**: A fast, concurrent **Go** server utilizing the **chi** router.
 - **Real-Time Communication**: Extensive use of WebSockets to synchronize and update the game state seamlessly.
-- **Database**: **SQLite** via **Turso** for storing lobby and persistent game state.
 
 ## Monorepo Architecture
 This project uses **PNPM Workspaces** to easily orchestrate both applications side-by-side.
@@ -18,8 +17,7 @@ web-ludo/
 │   ├── web/        # Vite + React + TS Frontend
 │   └── server/     # Go + chi Backend
 ├── package.json    # Root npm scripts
-├── pnpm-workspace.yaml  
-└── .env            # Turso database credentials (template)
+└── pnpm-workspace.yaml
 ```
 
 ## Running the Application Locally
